@@ -1,0 +1,90 @@
+---
+title: "Practical Machine Learning Project"
+author: "Sreekrishnan Ramachandran"
+date: "October 16, 2018"
+output: html_document
+---
+
+```{r include=FALSE}
+library(caret)
+library(randomForest)
+```
+## Summary
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+
+The goal of this project is to build a machine learning algorithm to predict activity quality (classe) from activity monitors.
+
+## Data Loading
+```{r include=FALSE}
+training <- read.csv("pml-training.csv")
+testing <- read.csv("pml-testing.csv")
+```
+
+lets check the size of the dataframes. and the summary
+
+```{r}
+dim(training)
+dim(testing)
+#str(training)
+```
+
+It looks like a lot of null values for many attributes
+
+## feature selection 
+
+We eliminate features that are not relavent.Columns with mostly null
+
+```{r warning=FALSE}
+selected.attributes = c()
+for (i in 1:length(testing)){
+    if (!is.na(unique(testing[, i]))){
+        selected.attributes = c(selected.attributes, i)
+    }
+}
+training = training[, selected.attributes]
+testing = testing[, selected.attributes]
+```
+
+further observation its looks like first 7 attributes are not predictors
+
+```{r}
+training = training[, 7:length(training)]
+testing = testing[, 7:length(testing)]
+```
+
+## buildign training and testing dataset
+
+Our test data set is very small. with only 20 observations. So it is better to split the testing set - 70% training 30% testing
+
+```{r}
+iTrain <- createDataPartition(y=training$classe, p=0.7, list=FALSE)
+training2 <- training[iTrain,]
+testing2 <- training[-iTrain,]
+dim(training2)
+dim(testing2)
+```
+
+## Random Forest Model
+
+The data contains both Factor and continuous varibales so I decided to choose Random Forest Model
+
+```{r}
+fit <- randomForest(classe ~ ., data = training2)
+fit
+```
+
+now lets apply the model to testing2
+
+```{r}
+predict <- predict(fit, testing2, type="class")
+confusionMatrix(testing2$classe, predict)
+
+```
+
+The accuracy of the model is 99.7%. Now lets apply it on the real testing set and find the classe for the testing dataset
+
+```{r}
+predict <- predict(fit, testing, type="class")
+predict
+```
